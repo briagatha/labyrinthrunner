@@ -1,6 +1,6 @@
 $(document).ready(function() {
     var load_page = function(pagename,data) {
-        $.get('../templates/'+pagename+'.html', function(templates) {
+        $.get('templates/'+pagename+'.html', function(templates) {
             var template = $(templates).filter('#tpl-'+pagename).html();
             $('#content').html(Mustache.render(template, data));
         });
@@ -14,7 +14,7 @@ $(document).ready(function() {
 
     $("#content").on('click','#complete_labyrinth',function() {
         var clevel = $(this).data('level');
-        $.get('../templates/next.html', function(templates) {
+        $.get('templates/next.html', function(templates) {
             var template = $(templates).filter('#tpl-next').html();
             $('#next_level_wrapper').html(Mustache.render(template, {level: clevel}));
         });
