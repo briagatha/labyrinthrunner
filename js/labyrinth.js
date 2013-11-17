@@ -120,18 +120,22 @@ var generate_maze = function( cols, rows ) {
     var create_entrance_or_exit = function(cell) {
         // detect maze edges bordering cell
         var edges = [];
+        var top = 0;
+        var right = (cols-1);
+        var bottom = (rows-1);
+        var left = 0;
         
-        if( cell.x == 0 ) {
+        if( cell.x == left ) {
             edges.push('left');
         }
-        else if( cell.x == (cols-1) ) {
+        else if( cell.x == right ) {
             edges.push('right');
         }
         
-        if( cell.y == 0 ) {
+        if( cell.y == top ) {
             edges.push('top');
         }
-        else if( cell.x == (rows-1) ) {
+        else if( cell.y == bottom ) {
             edges.push('bottom');
         }
         
@@ -159,6 +163,8 @@ var generate_maze = function( cols, rows ) {
     else {
         cell = {x: rand(0, cols), y: 0};
     }
+    
+    var start_cell = cell;
 
     create_entrance_or_exit(cell);
 
@@ -173,16 +179,15 @@ var generate_maze = function( cols, rows ) {
     };
     
     var is_edge_cell = function(cell) {
-        var edges = [(cols-1),(rows-1)];
-        return ( in_array(cell.x,edges) || in_array(cell.y,edges) );
+        return ( cell.x == (cols-1) || cell.y == (rows-1) );
     };
 
-    var last_edge_cell = false;
+    var end_cell = false;
 
     while( visited.length < cell_count ) {
         // track to calculate exit cell
         if( is_edge_cell(cell) ) {
-            last_edge_cell = cell;
+            end_cell = cell;
         }
 
         unvisited = get_unvisited_neighbors( cell.x, cell.y, cols, rows );
@@ -199,30 +204,37 @@ var generate_maze = function( cols, rows ) {
         }
     }
 
-    create_entrance_or_exit(last_edge_cell);
+    create_entrance_or_exit(end_cell);
 
-    return maze;
+    return { start_cell: start_cell, end_cell: end_cell, maze: maze };
 };
 
-var draw_maze = function(id, maze, width) {
+var draw_maze = function(id, mz, width) {
+    var maze = mz.maze;
+    
     // Using an html5 canvas to draw the grid
     var cell_size = width / maze.length;
     
     var canvas = document.getElementById(id);
     var context = canvas.getContext('2d');
+    
+    var get_cell_corners = function( x, y ) {
+        // Mapping cells to pixel values
+        return { top_left: { x: x*cell_size,
+                             y: y*cell_size },
+                 top_right: { x: (x+1)*cell_size,
+                              y: y*cell_size },
+                 bottom_right: { x: (x+1)*cell_size,
+                                 y: (y+1)*cell_size },
+                 bottom_left: { x: x*cell_size,
+                                y: (y+1)*cell_size } };
+    };
 
     var draw_cell = function( x, y ) {
         var cell = maze[x][y];
         
         // Mapping cells to pixel values
-        var corners = { top_left: { x: x*cell_size,
-                                    y: y*cell_size },
-                        top_right: { x: (x+1)*cell_size,
-                                     y: y*cell_size },
-                        bottom_right: { x: (x+1)*cell_size,
-                                        y: (y+1)*cell_size },
-                        bottom_left: { x: x*cell_size,
-                                       y: (y+1)*cell_size } };
+        var corners = get_cell_corners( x, y );
 
         context.strokeStyle = '#000000';
         
@@ -264,4 +276,15 @@ var draw_maze = function(id, maze, width) {
             draw_cell(c,r);
         }
     }
+    
+    var mark_cell = function(cell, color) {
+        var corners = get_cell_corners( cell.x, cell.y );
+        var pad = cell_size * 0.30;
+        
+        context.fillStyle = color;
+        context.fillRect(corners.top_left.x + pad, corners.top_left.y + pad, cell_size - (pad*2), cell_size - (pad*2));
+    };
+    
+    mark_cell(mz.start_cell, '#00FF00');
+    mark_cell(mz.end_cell, '#FF0000');
 };
