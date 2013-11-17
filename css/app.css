@@ -1,4 +1,8 @@
 body {
     color: black;
-    background-color: yellow;
+}
+
+#next_level_wrapper {
+    margin-top: 10px;
+    font-size: 120%;
 }
