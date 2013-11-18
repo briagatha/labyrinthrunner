@@ -334,12 +334,14 @@ var draw_maze = function(id, mz, width) {
                     if( typeof evt == "undefined" ) {
                         return pos;
                     }
-                    
+
                     if(diff_x===false) {
                         diff_x = evt.offsetX - pos.x;
+                        diff_x = diff_x - (diff_x % cell_size);
                     }
                     if(diff_y===false) {
                         diff_y = evt.offsetY - pos.y;
+                        diff_y = diff_y - (diff_y % cell_size);
                     }
 
                     var curr_cell = get_cell_from_coords( evt.offsetX, evt.offsetY );
@@ -347,16 +349,16 @@ var draw_maze = function(id, mz, width) {
                     
                     var curr_edges = maze[curr_cell.x][curr_cell.y];
                     var curr_corners = get_cell_corners( curr_cell );
-                    var curr_pos = { x: curr_corners.top_left.x - diff_x + pad,
-                                     y: curr_corners.top_left.y - diff_y + pad };
+                    var curr_pos = { x: curr_corners.top_left.x - diff_x,
+                                     y: curr_corners.top_left.y - diff_y };
                      
 
                     var last_cell_string = path[ path.length - 1 ];
                     var last_cell = parse_cell_string( last_cell_string );
                     var last_corners = get_cell_corners( last_cell );
                     var last_edges = maze[last_cell.x][last_cell.y];
-                    var last_pos = { x: last_corners.top_left.x - diff_x + pad*2,
-                                     y: last_corners.top_left.y - diff_y + pad*2};
+                    var last_pos = { x: last_corners.top_left.x - diff_x,
+                                     y: last_corners.top_left.y - diff_y };
                     
                     if( in_array(end_cell_string,path) ) {
                         return last_pos;
