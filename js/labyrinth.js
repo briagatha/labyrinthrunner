@@ -159,15 +159,15 @@ var generate_maze = function( cols, rows ) {
     
     // Building the maze here
     
-    var cell = {};
-    var starting_edge = array_rand(['x','y']);
+    var cell = {x:0,y:0};
+    //var starting_edge = array_rand(['x','y']);
     
-    if(starting_edge === 'x') {
-        cell = {x: 0, y: rand(0, rows)};
-    }
-    else {
-        cell = {x: rand(0, cols), y: 0};
-    }
+    //if(starting_edge === 'x') {
+    //    cell = {x: 0, y: rand(0, rows)};
+    //}
+    //else {
+    //    cell = {x: rand(0, cols), y: 0};
+    //}
     
     var start_cell = cell;
 
@@ -187,13 +187,13 @@ var generate_maze = function( cols, rows ) {
         return ( cell.x == (cols-1) || cell.y == (rows-1) );
     };
 
-    var end_cell = false;
+    var end_cell = { x: (cols - 1), y: (rows - 1) };
 
     while( visited.length < cell_count ) {
         // track to calculate exit cell
-        if( is_edge_cell(cell) ) {
-            end_cell = cell;
-        }
+        //if( is_edge_cell(cell) ) {
+        //    end_cell = cell;
+        //}
 
         unvisited = get_unvisited_neighbors( cell.x, cell.y, cols, rows );
         if( unvisited.length > 0 ) {
@@ -391,6 +391,7 @@ var draw_maze = function(id, mz, width) {
                             path.push(cell_string);
                             path_rects[cell_string] = curr_rect;
                             
+                            // trigger the solved event
                             if( cell_string == end_cell_string ) {
                                 $("#" + id).trigger( "labyrinth_solved" );
                             }
