@@ -12,11 +12,11 @@ $(document).ready(function() {
     $("#content").on('click','#start',function() {
         load_page("level",{level: 1}, function() {
             var maze = generate_maze(13,13);
-            draw_maze('labyrinth',maze,500);
+            draw_maze('labyrinth',maze,$('#content').width());
         });
     });
 
-    $("#content").on('click','#complete_labyrinth',function() {
+    $("#content").on('labyrinth_solved','#labyrinth',function() {
         var clevel = $(this).data('level');
         $.get('templates/next.html', function(templates) {
             var template = $(templates).filter('#tpl-next').html();
@@ -33,7 +33,7 @@ $(document).ready(function() {
             load_page("level",{level: nlevel}, function() {
                 var size = (parseInt(nlevel,10) * 3) + 10;
                 var maze = generate_maze(size,size);
-                draw_maze('labyrinth',maze,500);
+                draw_maze('labyrinth',maze,$('#content').width());
             }); 
         }
     });

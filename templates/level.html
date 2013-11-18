@@ -1,8 +1,5 @@
 <script id="tpl-level" type="text/html">
     <h2>Level {{level}}</h2>
-    <div class="text-center container">
-        <canvas id="labyrinth" width="500" height="500"></canvas>
-    </div>
-    <button id="complete_labyrinth" type="button" data-level="{{level}}" class="btn btn-success">Complete Labyrinth</button>
+    <div id="labyrinth" data-level="{{level}}"></div>
     <div id="next_level_wrapper"></div>
 </script>

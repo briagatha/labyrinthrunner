@@ -25,7 +25,12 @@ var in_array = function(needle, haystack) {
 
 var stringify_cell = function(cell) {
     return cell.x.toString() + "," + cell.y.toString();
-}
+};
+
+var parse_cell_string = function(cell_string) {
+    var split = cell_string.split(",");
+    return { x: parseInt(split[0],10), y: parseInt(split[1],10) };
+};
 
 var generate_maze = function( cols, rows ) {
     var cell_count = rows * cols;
@@ -214,77 +219,225 @@ var draw_maze = function(id, mz, width) {
     
     // Using an html5 canvas to draw the grid
     var cell_size = width / maze.length;
+    var height = cell_size * maze[0].length;
     
-    var canvas = document.getElementById(id);
-    var context = canvas.getContext('2d');
+    var stage = new Kinetic.Stage({
+        container: id,
+        width: width,
+        height: height
+    });
     
-    var get_cell_corners = function( x, y ) {
+    var layer = new Kinetic.Layer();
+    
+    // Maze coordinates to canvas pixel coordinates
+    var get_cell_corners = function( cell ) {
         // Mapping cells to pixel values
-        return { top_left: { x: x*cell_size,
-                             y: y*cell_size },
-                 top_right: { x: (x+1)*cell_size,
-                              y: y*cell_size },
-                 bottom_right: { x: (x+1)*cell_size,
-                                 y: (y+1)*cell_size },
-                 bottom_left: { x: x*cell_size,
-                                y: (y+1)*cell_size } };
+        return { top_left: { x: cell.x*cell_size,
+                             y: cell.y*cell_size },
+                 top_right: { x: (cell.x+1)*cell_size,
+                              y: cell.y*cell_size },
+                 bottom_right: { x: (cell.x+1)*cell_size,
+                                 y: (cell.y+1)*cell_size },
+                 bottom_left: { x: cell.x*cell_size,
+                                y: (cell.y+1)*cell_size } };
+    };
+    
+    // Canvas pixel coordinates to maze coordinates
+    var get_cell_from_coords = function( x, y ) {
+        var cell = {};
+        
+        cell.x = parseInt( ( x / cell_size ), 10 );
+        cell.y = parseInt( ( y / cell_size ), 10 );
+        
+        return cell;
     };
 
-    var draw_cell = function( x, y ) {
-        var cell = maze[x][y];
+    var draw_cell = function( cell ) {
+        var edges = maze[cell.x][cell.y];
         
         // Mapping cells to pixel values
-        var corners = get_cell_corners( x, y );
-
-        context.strokeStyle = '#000000';
-        
-        context.clearRect(corners.top_left.x-1, corners.top_left.y-1, cell_size+2, cell_size+2);
+        var corners = get_cell_corners( cell );
 
         // draw Top
-        if( cell.top ) {
-            context.moveTo( corners.top_left.x, corners.top_left.y );
-            context.lineTo(corners.top_right.x, corners.top_right.y);
-            context.stroke();
+        if( edges.top ) {
+            layer.add(new Kinetic.Line({
+                points: [corners.top_left,corners.top_right],
+                stroke: 'black',
+                strokeWidth: 1
+            }));
         }
 
         // draw right
-        if( cell.right ) {
-            context.moveTo( corners.top_right.x, corners.top_right.y );
-            context.lineTo(corners.bottom_right.x, corners.bottom_right.y);
-            context.stroke();
+        if( edges.right ) {
+            layer.add(new Kinetic.Line({
+                points: [corners.top_right,corners.bottom_right],
+                stroke: 'black',
+                strokeWidth: 1
+            }));
         }
 
         // draw bottom
-        if( cell.bottom ) {
-            context.moveTo( corners.bottom_right.x, corners.bottom_right.y );
-            context.lineTo(corners.bottom_left.x, corners.bottom_left.y);
-            context.stroke();
+        if( edges.bottom ) {
+            layer.add(new Kinetic.Line({
+                points: [corners.bottom_right,corners.bottom_left],
+                stroke: 'black',
+                strokeWidth: 1
+            }));
         }
 
         // draw left
-        if( cell.left ) {
-            context.moveTo( corners.bottom_left.x, corners.bottom_left.y );
-            context.lineTo(corners.top_left.x, corners.top_left.y);
-            context.stroke();
+        if( edges.left ) {
+            layer.add(new Kinetic.Line({
+                points: [corners.bottom_left,corners.top_left],
+                stroke: 'black',
+                strokeWidth: 1
+            }));
         }
     };
-
-    context.beginPath();
 
     for(var c = 0;c < maze.length;c = c + 1) {
         for(var r = 0; r < maze[c].length; r = r + 1) {
-            draw_cell(c,r);
+            draw_cell({x:c,y:r});
         }
     }
     
-    var mark_cell = function(cell, color) {
-        var corners = get_cell_corners( cell.x, cell.y );
-        var pad = cell_size * 0.30;
+    var start_cell_string = stringify_cell(mz.start_cell);
+    var end_cell_string = stringify_cell(mz.end_cell);
+    
+    var path = [];
+    var path_rects = {};
+    var path_layer = new Kinetic.Layer();
+
+    var mark_cell = function(cell, color, draggable) {
+        var corners = get_cell_corners( cell );
+        var pad = cell_size * 0.20;
+
+        if( draggable ) {
+            var diff_x = false;
+            var diff_y = false;
+
+            path_rects[start_cell_string] =
+                new Kinetic.Rect({ x: corners.top_left.x + pad,
+                                   y: corners.top_left.y + pad,
+                                   width: cell_size - (pad*2),
+                                   height: cell_size - (pad*2),
+                                   fill: 'blue'
+                                });
+
+            path.push(start_cell_string);
+            path_layer.add(path_rects[stringify_cell(mz.start_cell)]);
+    
+            // Bound by maze walls
+            var group = new Kinetic.Group({
+                draggable: true,
+                dragBoundFunc: function(pos,evt) {
+                    if( typeof evt == "undefined" ) {
+                        return pos;
+                    }
+                    
+                    if(diff_x===false) {
+                        diff_x = evt.offsetX - pos.x;
+                    }
+                    if(diff_y===false) {
+                        diff_y = evt.offsetY - pos.y;
+                    }
+
+                    var curr_cell = get_cell_from_coords( evt.offsetX, evt.offsetY );
+                    var cell_string = stringify_cell(curr_cell);
+                    
+                    var curr_edges = maze[curr_cell.x][curr_cell.y];
+                    var curr_corners = get_cell_corners( curr_cell );
+                    var curr_pos = { x: curr_corners.top_left.x - diff_x + pad,
+                                     y: curr_corners.top_left.y - diff_y + pad };
+                     
+
+                    var last_cell_string = path[ path.length - 1 ];
+                    var last_cell = parse_cell_string( last_cell_string );
+                    var last_corners = get_cell_corners( last_cell );
+                    var last_edges = maze[last_cell.x][last_cell.y];
+                    var last_pos = { x: last_corners.top_left.x - diff_x + pad*2,
+                                     y: last_corners.top_left.y - diff_y + pad*2};
+                    
+                    if( in_array(end_cell_string,path) ) {
+                        return last_pos;
+                    }
+                    
+                    // See if this move is possible
+                    if( ( curr_cell.x == last_cell.x && last_cell.y == ( curr_cell.y + 1 ) && // MOVING UP
+                          !curr_edges.bottom && !last_edges.top ) ||
+                        ( curr_cell.y == last_cell.y && last_cell.x == ( curr_cell.x - 1 ) && // MOVING RIGHT
+                             !curr_edges.left && !last_edges.right ) ||
+                        ( curr_cell.x == last_cell.x && last_cell.y == ( curr_cell.y - 1 ) && // MOVING DOWN
+                             !curr_edges.top && !last_edges.bottom ) ||
+                        ( curr_cell.y == last_cell.y && last_cell.x == ( curr_cell.x + 1 ) && // MOVING LEFT
+                          !curr_edges.right && !last_edges.left ) )
+                    {
+                        if(in_array(cell_string,path)) {
+                            old_rect = path_rects[last_cell_string];
+                            old_rect.remove();
+                            path_layer.draw();
+                            path.pop(); // we're going back here
+                        }
+                        else {
+                            var curr_rect = new Kinetic.Rect({
+                                x: curr_corners.top_left.x + pad,
+                                y: curr_corners.top_left.y + pad,
+                                width: cell_size - (pad*2),
+                                height: cell_size - (pad*2),
+                                fill: 'blue'
+                            });
+                            path_layer.add(curr_rect);
+                            path_layer.draw();
+                            path.push(cell_string);
+                            path_rects[cell_string] = curr_rect;
+                            
+                            if( cell_string == end_cell_string ) {
+                                $("#" + id).trigger( "labyrinth_solved" );
+                            }
+                        }
+
+                        return curr_pos;
+                    }
+                    else {
+                        // stay put if there's a wall
+                        return last_pos;
+                    }
+                }
+            });
+        }
+
+        var rect = new Kinetic.Rect({
+            x: corners.top_left.x + pad,
+            y: corners.top_left.y + pad,
+            width: cell_size - (pad*2),
+            height: cell_size - (pad*2),
+            fill: color
+        });
+
+        if( draggable ) {
+            // add cursor styling
+            rect.on('mouseover', function() {
+                document.body.style.cursor = 'move';
+            });
+
+            rect.on('mouseout', function() {
+                document.body.style.cursor = 'default';
+            });
+        }
+
+        if(draggable) {
+            group.add(rect);
+            layer.add(group);
+        }
+        else {
+            layer.add(rect);
+        }
         
-        context.fillStyle = color;
-        context.fillRect(corners.top_left.x + pad, corners.top_left.y + pad, cell_size - (pad*2), cell_size - (pad*2));
     };
     
-    mark_cell(mz.start_cell, '#00FF00');
-    mark_cell(mz.end_cell, '#FF0000');
+    mark_cell(mz.end_cell, 'red', false);
+    mark_cell(mz.start_cell, 'yellow', true);
+    
+    stage.add(path_layer);
+    stage.add(layer);
 };
