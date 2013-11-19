@@ -381,24 +381,12 @@ var draw_maze = function(id, mz, width) {
                             path.pop(); // we're going back here
                         }
                         else {
-                            var points = [];
-                            if(curr_cell.x == last_cell.x) {
-                                var xval = (curr_corners.top_left.x + (cell_size / 2));
-                                points = [ xval, curr_corners.top_left.y,
-                                           xval, curr_corners.bottom_left.y ];
-                            }
-                            else {
-                                var yval = (curr_corners.top_left.y + (cell_size / 2));
-                                points = [ curr_corners.top_left.x, yval,
-                                           curr_corners.top_right.x, yval ];
-                            }
-
-                            var curr_rect = new Kinetic.Line({
-                                points: points,
-                                stroke: 'blue',
-                                strokeWidth: cell_size - (pad*3),
-                                lineCap: 'round',
-                                lineJoin: 'round'
+                            var curr_rect = new Kinetic.Rect({
+                                x: curr_corners.top_left.x + pad,
+                                y: curr_corners.top_left.y + pad,
+                                width: cell_size - (pad*2),
+                                height: cell_size - (pad*2),
+                                fill: 'blue'
                             });
 
                             path_layer.add(curr_rect);
