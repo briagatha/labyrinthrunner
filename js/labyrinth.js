@@ -325,7 +325,7 @@ var draw_maze = function(id, mz, width) {
                                 });
 
             path.push(start_cell_string);
-            path_layer.add(path_rects[stringify_cell(mz.start_cell)]);
+            path_layer.add(path_rects[start_cell_string]);
     
             // Bound by maze walls
             var group = new Kinetic.Group({
@@ -381,18 +381,31 @@ var draw_maze = function(id, mz, width) {
                             path.pop(); // we're going back here
                         }
                         else {
-                            var curr_rect = new Kinetic.Rect({
-                                x: curr_corners.top_left.x + pad,
-                                y: curr_corners.top_left.y + pad,
-                                width: cell_size - (pad*2),
-                                height: cell_size - (pad*2),
-                                fill: 'blue'
+                            var points = [];
+                            if(curr_cell.x == last_cell.x) {
+                                var xval = (curr_corners.top_left.x + (cell_size / 2));
+                                points = [ xval, curr_corners.top_left.y,
+                                           xval, curr_corners.bottom_left.y ];
+                            }
+                            else {
+                                var yval = (curr_corners.top_left.y + (cell_size / 2));
+                                points = [ curr_corners.top_left.x, yval,
+                                           curr_corners.top_right.x, yval ];
+                            }
+
+                            var curr_rect = new Kinetic.Line({
+                                points: points,
+                                stroke: 'blue',
+                                strokeWidth: cell_size - (pad*3),
+                                lineCap: 'round',
+                                lineJoin: 'round'
                             });
+
                             path_layer.add(curr_rect);
                             path_layer.draw();
                             path.push(cell_string);
                             path_rects[cell_string] = curr_rect;
-                            
+
                             // trigger the solved event
                             if( cell_string == end_cell_string ) {
                                 $("#" + id).trigger( "labyrinth_solved" );
